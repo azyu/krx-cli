@@ -22,6 +22,8 @@
 | [x] | Make README wording more polite and user-friendly | Codex |
 | [x] | Check whether `~/.agents/skills/create-readme` exists and is readable | Codex |
 | [x] | Commit and push `README.md` wording updates | Codex |
+| [x] | Update `README.md` with current project capabilities and usage | Codex |
+| [x] | Commit and push refreshed `README.md` content | Codex |
 
 ## Status Legend
 
