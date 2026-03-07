@@ -64,6 +64,15 @@
 6. If networking code changed, verify one sample call:
    `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample`
 
+## Definition of Done
+
+A task is done only when all of the following are true:
+
+- The requested change is complete and stays within the requested scope.
+- Required code and docs are updated together when the public CLI behavior or runtime catalog changes.
+- The verification steps in `After Code Changes` have been completed for the affected surface.
+- Any relevant targeted test added for the change passes.
+
 ## Testing
 
 - Keep unit tests next to the code they verify.
@@ -76,6 +85,10 @@
 - Use conventional prefixes: `feat:`, `fix:`, `docs:`, `chore:`
 - Mention affected API IDs in the commit body when changing catalog coverage.
 - Keep docs and code together in the same PR when the public KRX schema changes.
+- Once the Definition of Done is satisfied, make sure the work is on a branch based on `main`.
+- Commit in logical steps instead of one large snapshot commit.
+- Push that branch to the remote.
+- Open a PR for review.
 
 ## Secrets & Environment
 

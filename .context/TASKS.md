@@ -33,6 +33,8 @@
 | [x] | Add GitHub release workflows and Homebrew tap update support | Codex |
 | [x] | Retarget release artifacts to linux amd64, macOS arm64, Windows x64, and Windows arm64 | Codex |
 | [x] | Add linux arm64 release targeting and align Homebrew/docs | Codex |
+| [x] | Define project DoD in `AGENTS.md` and add post-DoD branch/push/PR workflow | Codex |
+| [x] | Commit and push the AGENTS.md DoD update | Codex |
 
 ## Status Legend
 
