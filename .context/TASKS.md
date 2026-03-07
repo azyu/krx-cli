@@ -17,6 +17,11 @@
 | [x] | Add release install path setup for `~/.local/bin/krw` | Codex |
 | [ ] | Evaluate `--fields` on top of `--body-only` | — |
 | [ ] | Evaluate MCP or library surface after CLI basics stabilize | — |
+| [x] | Review current project for additional `$rust-cli` updates | Codex |
+| [x] | Verify current config storage path behavior in code | Codex |
+| [x] | Make README wording more polite and user-friendly | Codex |
+| [x] | Check whether `~/.agents/skills/create-readme` exists and is readable | Codex |
+| [x] | Commit and push `README.md` wording updates | Codex |
 
 ## Status Legend
 
