@@ -4,40 +4,41 @@
 
 ## Project Structure
 
-- `src/main.rs`: binary entrypoint
-- `src/lib.rs`: command dispatch and output mode resolution
-- `src/cli.rs`: `clap` models for subcommands and flags
-- `src/catalog.rs`: built-in KRX API registry and schema views
-- `src/client.rs`: parameter parsing, validation, request planning, HTTP execution
-- `src/config.rs`: config path resolution and persisted auth key management
-- `src/error.rs`: typed user-facing errors
-- `src/output.rs`: JSON/text output helpers
+- `crates/cli/src/main.rs`: binary entrypoint
+- `crates/cli/src/app.rs`: command dispatch and output mode resolution
+- `crates/cli/src/cli.rs`: `clap` models for subcommands and flags
+- `crates/cli/src/output.rs`: JSON/text output helpers
+- `crates/core/src/catalog.rs`: built-in KRX API registry and schema views
+- `crates/core/src/client.rs`: parameter parsing, validation, request planning, HTTP execution
+- `crates/core/src/config.rs`: config path resolution and persisted auth key management
+- `crates/core/src/error.rs`: typed user-facing errors
+- `crates/core/src/runtime.rs`: clap-free reusable runtime surface
 - `docs/reference.md`: researched KRX API inventory and endpoint notes
 - `docs/references.md`: project decisions, article takeaways, open questions
 - `CONTEXT.md`: agent-facing usage and safety rules
 
 ## Build & Development
 
-- Install/build: `cargo build`
+- Install/build: `cargo build -p krx-cli --bin krw`
 - Format: `cargo fmt --all`
 - Full tests: `cargo test`
-- Focused test example: `cargo test client::tests::parse_params_rejects_invalid_date --lib`
-- List APIs: `cargo run -- schema list`
-- Show schema: `cargo run -- --output json schema show krx_dd_trd`
-- Dry-run call: `cargo run -- --output json call krx_dd_trd --date 20200414 --sample --dry-run`
-- Sample live call: `cargo run -- --output json call krx_dd_trd --date 20200414 --sample`
-- Config path: `cargo run -- config path`
-- Save auth key: `cargo run -- config set-auth-key YOUR_ISSUED_KEY`
-- Show config: `cargo run -- --output json config show`
+- Focused test example: `cargo test -p krx-core client::tests::parse_params_rejects_invalid_date`
+- List APIs: `cargo run -p krx-cli -- schema list`
+- Show schema: `cargo run -p krx-cli -- --output json schema show krx_dd_trd`
+- Dry-run call: `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample --dry-run`
+- Sample live call: `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample`
+- Config path: `cargo run -p krx-cli -- config path`
+- Save auth key: `cargo run -p krx-cli -- config set-auth-key YOUR_ISSUED_KEY`
+- Show config: `cargo run -p krx-cli -- --output json config show`
 
 ## Code Standards
 
 ### Do
 
 - Keep the CLI read-only unless the user explicitly asks for write operations.
-- Add API metadata in `src/catalog.rs` and update `docs/reference.md` in the same change.
-- Route user input through `src/client.rs` validation instead of parsing flags ad hoc in command handlers.
-- Keep all persisted configuration under `~/.config/krx/config.json` via `src/config.rs`.
+- Add API metadata in `crates/core/src/catalog.rs` and update `docs/reference.md` in the same change.
+- Route user input through `crates/core/src/client.rs` validation instead of parsing flags ad hoc in command handlers.
+- Keep all persisted configuration under `~/.config/krx/config.json` via `crates/core/src/config.rs`.
 - Prefer structured JSON output for anything an agent or script will consume.
 - Use `KrxCliError` for user-facing failures so error messages stay consistent.
 - Keep new modules small and single-purpose; this repo does not need framework-style layering.
@@ -46,7 +47,7 @@
 
 - Do not hardcode real KRX API keys in code, docs, tests, or examples.
 - Do not write config files anywhere except `~/.config/krx` unless the user asks for a migration.
-- Do not assemble KRX URLs outside `src/catalog.rs` and `src/client.rs`.
+- Do not assemble KRX URLs outside `crates/core/src/catalog.rs` and `crates/core/src/client.rs`.
 - Do not bypass `--dry-run` when adding future mutating commands.
 - Do not add one-off flags that duplicate nested payload structure when `--params` can cover it.
 - Do not silently accept unknown query fields; reject them.
@@ -57,11 +58,11 @@
 2. Run a targeted test if you changed validation or request planning
 3. Run `cargo test`
 4. Smoke test the CLI:
-   `cargo run -- --output json schema show krx_dd_trd`
+   `cargo run -p krx-cli -- --output json schema show krx_dd_trd`
 5. Smoke test request planning:
-   `cargo run -- --output json call krx_dd_trd --date 20200414 --sample --dry-run`
+   `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample --dry-run`
 6. If networking code changed, verify one sample call:
-   `cargo run -- --output json call krx_dd_trd --date 20200414 --sample`
+   `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample`
 
 ## Testing
 
@@ -88,7 +89,7 @@
 - Real endpoint URLs currently use `/svc/apis/{path}/{apiId}` without `.json` or `.xml`.
 - Sample endpoint URLs require the format suffix.
 - The currently documented public KRX APIs all expose `basDd`, but this may change upstream.
-- `docs/reference.md` is the detailed reference; `src/catalog.rs` only keeps the runtime subset needed by the CLI.
+- `docs/reference.md` is the detailed reference; `crates/core/src/catalog.rs` only keeps the runtime subset needed by the CLI.
 - Auth resolution order is `--auth-key` > `KRX_API_KEY` > `~/.config/krx/config.json`.
 
 ## Multi-Agent Coordination

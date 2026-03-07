@@ -15,8 +15,8 @@
 | [x] | Add richer KRX error mapping for real endpoint failures | Codex |
 | [x] | Add minimal `--body-only` response filtering support | Codex |
 | [x] | Add release install path setup for `~/.local/bin/krw` | Codex |
-| [ ] | Evaluate `--fields` on top of `--body-only` | — |
-| [ ] | Evaluate MCP or library surface after CLI basics stabilize | — |
+| [x] | Add `--fields` on top of `--body-only` | Codex |
+| [x] | Evaluate MCP or library surface after CLI basics stabilize | Codex |
 | [x] | Review current project for additional `$rust-cli` updates | Codex |
 | [x] | Verify current config storage path behavior in code | Codex |
 | [x] | Make README wording more polite and user-friendly | Codex |
@@ -24,6 +24,15 @@
 | [x] | Commit and push `README.md` wording updates | Codex |
 | [x] | Update `README.md` with current project capabilities and usage | Codex |
 | [x] | Commit and push refreshed `README.md` content | Codex |
+| [x] | Audit current implementation and complete the next highest-priority CLI gaps | Codex |
+| [x] | Make clap parse failures follow the JSON error contract | Codex |
+| [x] | Split the project into `krx-cli` and `krx-core` crates | Codex |
+| [x] | Audit implemented KRX API coverage and identify missing runtime support | Codex |
+| [x] | Review GitHub Actions and Homebrew release support against `/Volumes/WD_Blue_1TB/Code/Personal/bb-cli` | Codex |
+| [x] | Inspect current Homebrew release/distribution readiness and note minimal GitHub Actions gaps | Codex |
+| [x] | Add GitHub release workflows and Homebrew tap update support | Codex |
+| [x] | Retarget release artifacts to linux amd64, macOS arm64, Windows x64, and Windows arm64 | Codex |
+| [x] | Add linux arm64 release targeting and align Homebrew/docs | Codex |
 
 ## Status Legend
 

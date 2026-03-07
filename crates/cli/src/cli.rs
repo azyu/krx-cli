@@ -10,12 +10,21 @@ pub enum OutputMode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ValueEnum)]
 #[serde(rename_all = "snake_case")]
-pub enum ResponseFormat {
+pub enum ResponseFormatArg {
     Json,
     Xml,
 }
 
-impl std::fmt::Display for ResponseFormat {
+impl From<ResponseFormatArg> for krx_core::runtime::ResponseFormat {
+    fn from(value: ResponseFormatArg) -> Self {
+        match value {
+            ResponseFormatArg::Json => Self::Json,
+            ResponseFormatArg::Xml => Self::Xml,
+        }
+    }
+}
+
+impl std::fmt::Display for ResponseFormatArg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Json => f.write_str("json"),
@@ -77,8 +86,8 @@ pub struct CallArgs {
     #[arg(long, visible_alias = "json", help = "JSON object of query parameters")]
     pub params: Option<String>,
 
-    #[arg(long, default_value_t = ResponseFormat::Json, value_enum)]
-    pub format: ResponseFormat,
+    #[arg(long, default_value_t = ResponseFormatArg::Json, value_enum)]
+    pub format: ResponseFormatArg,
 
     #[arg(
         long,
@@ -92,6 +101,13 @@ pub struct CallArgs {
 
     #[arg(long, help = "When using --output json, print only the response body")]
     pub body_only: bool,
+
+    #[arg(
+        long,
+        value_delimiter = ',',
+        help = "When using --output json --format json, keep only selected response fields"
+    )]
+    pub fields: Option<Vec<String>>,
 }
 
 #[cfg(test)]
@@ -114,6 +130,31 @@ mod tests {
             Commands::Call(args) => {
                 assert!(args.body_only);
                 assert_eq!(args.api_id, "krx_dd_trd");
+            }
+            _ => panic!("expected call command"),
+        }
+    }
+
+    #[test]
+    fn call_parses_fields_flag() {
+        let cli = Cli::try_parse_from([
+            "krw",
+            "call",
+            "krx_dd_trd",
+            "--date",
+            "20200414",
+            "--fields",
+            "BAS_DD,IDX_NM",
+        ])
+        .unwrap();
+
+        match cli.command {
+            Commands::Call(args) => {
+                assert!(!args.body_only);
+                assert_eq!(
+                    args.fields,
+                    Some(vec!["BAS_DD".to_string(), "IDX_NM".to_string()])
+                );
             }
             _ => panic!("expected call command"),
         }

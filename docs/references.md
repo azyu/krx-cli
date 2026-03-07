@@ -2,13 +2,13 @@
 
 ## Project Overview
 
-`krx-cli`는 한국거래소 Open API를 호출하는 Rust 기반 CLI 도구다. 1차 목표는 KRX가 공개한 31개 읽기 전용 API를 안정적으로 호출할 수 있는 실행 파일을 만드는 것이고, 2차 목표는 사람뿐 아니라 AI 에이전트도 안전하게 사용할 수 있는 인터페이스를 제공하는 것이다. 초기 범위는 `Rust + clap` 조합의 단일 바이너리, 내장 API 카탈로그, 구조화된 스키마 조회, `basDd` 검증, 샘플/실서버 엔드포인트 전환, `--dry-run`, 출력 필드 메타데이터, 최소 응답 축소(`--body-only`) 지원이다.
+`krx-cli`는 한국거래소 Open API를 호출하는 Rust 기반 CLI 도구다. 1차 목표는 KRX가 공개한 31개 읽기 전용 API를 안정적으로 호출할 수 있는 실행 파일을 만드는 것이고, 2차 목표는 사람뿐 아니라 AI 에이전트도 안전하게 사용할 수 있는 인터페이스를 제공하는 것이다. 현재 구조는 `krx-cli`와 `krx-core` 두 crate로 나뉘며, `krw` 바이너리는 그대로 유지한다. 범위는 내장 API 카탈로그, 구조화된 스키마 조회, `basDd` 검증, 샘플/실서버 엔드포인트 전환, `--dry-run`, 출력 필드 메타데이터, 최소 응답 축소(`--body-only`), 선택 필드 축소(`--fields`) 지원이다. `--fields`는 JSON body의 row 객체만 줄이고 `OutBlock_1` 같은 최상위 컨테이너는 유지한다. 공용 runtime 표면은 `krx-core`에 두고, MCP는 그 위에 얹는 순서를 따른다.
 
 ## Tech Stack
 
 | Layer | Technology | Version | Rationale |
 |-------|-----------|---------|-----------|
-| Language | Rust | edition 2024 | 단일 바이너리 배포, 강한 타입, 안전한 입력 검증에 적합 |
+| Language | Rust | edition 2024 | workspace 구성과 단일 `krw` 바이너리 배포를 함께 가져가기에 적합 |
 | CLI | clap | 4.x | Rust 생태계 표준 CLI 파서, derive 기반 선언형 인터페이스 제공 |
 | HTTP | reqwest (blocking) | 0.12.x | 단순 GET 호출, TLS 지원, 초기 스캐폴드에 충분 |
 | Serialization | serde / serde_json | 1.x | 구조화된 출력과 JSON 입력 파싱에 필요 |
@@ -52,6 +52,13 @@
 - **Decision:** 홈 디렉터리를 OS별로 해석한 뒤, 그 아래 `.config/krx/config.json`을 공통 설정 경로로 사용한다.
 - **Consequences:** 문서와 자동화 예제가 단순해진다. 대신 Windows 네이티브 `AppData` 경로를 따르지 않는 점을 명시해야 한다.
 
+### ADR-6: MCP보다 library-first runtime을 먼저 고정한다
+
+- **Status:** Accepted
+- **Context:** 현재 read-only CLI 경로가 안정화되었지만, 바로 MCP를 열면 CLI, library, MCP가 동시에 진화해 표면이 흔들릴 수 있다.
+- **Decision:** 먼저 clap 없는 runtime API로 요청 계획과 실행 경로를 고정하고, MCP는 그 공용 표면을 재사용하는 후속 작업으로 둔다.
+- **Consequences:** 이번 단계 구현 범위는 작게 유지되고, 이후 MCP 작업은 CLI 로직 복제 없이 runtime API 어댑터에 집중할 수 있다.
+
 ## Key References
 
 - KRX Open API 서비스 목록: https://openapi.krx.co.kr/contents/OPP/INFO/service/OPPINFO004.cmd
@@ -77,7 +84,6 @@
 
 ## Open Questions
 
-- `--body-only` 이후에 `--fields`까지 확장할지
 - 실서버 호출 시 에러 코드 매핑을 얼마나 더 세밀하게 할지
-- 추후 MCP 서피스 또는 라이브러리 모드(`lib.rs`)를 어디까지 확장할지
+- 새 `krx-core` 표면 위에 MCP 어댑터를 별도 바이너리로 둘지, 별도 crate로 둘지
 - KRX API 변경 감지를 자동화할지

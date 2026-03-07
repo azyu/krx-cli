@@ -37,3 +37,19 @@ pub enum KrxCliError {
     #[error("json parse failed: {0}")]
     Json(#[from] serde_json::Error),
 }
+
+impl KrxCliError {
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::UnknownApi(_) => "unknown_api",
+            Self::InvalidInput(_) => "invalid_input",
+            Self::MissingAuthKey => "missing_auth_key",
+            Self::UnauthorizedKey => "unauthorized_key",
+            Self::UnauthorizedApiCall => "unauthorized_api_call",
+            Self::HomeDirNotFound => "home_dir_not_found",
+            Self::Io(_) => "io_failed",
+            Self::Http(_) => "http_request_failed",
+            Self::Json(_) => "json_parse_failed",
+        }
+    }
+}

@@ -1,13 +1,13 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use reqwest::blocking::Client;
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 
 use crate::catalog::ApiSpec;
-use crate::cli::CallArgs;
 use crate::config::load_config;
 use crate::error::{KrxCliError, Result};
+use crate::runtime::ResponseFormat;
 
 const SAMPLE_AUTH_KEY: &str = "74D1B99DFBF345BBA3FB4476510A4BED4C78D13A";
 
@@ -40,7 +40,7 @@ pub fn parse_params(
     date: Option<&str>,
     api: &ApiSpec,
 ) -> Result<BTreeMap<String, String>> {
-    let mut params = match (raw_params, date) {
+    let params = match (raw_params, date) {
         (Some(json), None) => parse_json_object(json)?,
         (None, Some(date)) => BTreeMap::from([("basDd".to_string(), date.to_string())]),
         (Some(_), Some(_)) => {
@@ -56,18 +56,25 @@ pub fn parse_params(
         }
     };
 
-    validate_params(api, &mut params)?;
+    validate_query_params(api, &params)?;
     Ok(params)
+}
+
+pub fn parse_fields(raw_fields: Option<&[String]>, api: &ApiSpec) -> Result<Option<Vec<String>>> {
+    validate_selected_fields(raw_fields, api)
 }
 
 pub fn build_request_plan(
     api: &ApiSpec,
-    args: &CallArgs,
+    sample: bool,
+    format: ResponseFormat,
+    auth_key_override: Option<&str>,
     params: BTreeMap<String, String>,
 ) -> Result<RequestPlan> {
-    let auth_key = resolve_auth_key(args)?;
-    let mut url = if args.sample {
-        api.sample_endpoint(&args.format.to_string())
+    validate_query_params(api, &params)?;
+    let auth_key = resolve_auth_key(sample, auth_key_override)?;
+    let mut url = if sample {
+        api.sample_endpoint(&format.to_string())
     } else {
         api.real_endpoint()
     };
@@ -84,13 +91,58 @@ pub fn build_request_plan(
 
     Ok(RequestPlan {
         api_id: api.api_id.to_string(),
-        sample: args.sample,
+        sample,
         url,
         method: "GET",
         query: params,
         masked_auth_key: mask_auth_key(&auth_key),
         auth_key,
     })
+}
+
+pub fn validate_query_params(api: &ApiSpec, params: &BTreeMap<String, String>) -> Result<()> {
+    validate_params(api, params)
+}
+
+pub fn validate_selected_fields(
+    raw_fields: Option<&[String]>,
+    api: &ApiSpec,
+) -> Result<Option<Vec<String>>> {
+    let Some(raw_fields) = raw_fields else {
+        return Ok(None);
+    };
+
+    if raw_fields.is_empty() {
+        return Err(KrxCliError::InvalidInput(
+            "--fields requires at least one field name".to_string(),
+        ));
+    }
+
+    let mut seen = BTreeSet::new();
+    let mut fields = Vec::new();
+
+    for field in raw_fields {
+        if field.is_empty() {
+            return Err(KrxCliError::InvalidInput(
+                "field names in --fields cannot be empty".to_string(),
+            ));
+        }
+
+        reject_control_chars("field", field)?;
+
+        if !api.output_field_names.contains(&field.as_str()) {
+            return Err(KrxCliError::InvalidInput(format!(
+                "unknown output field for {}: {field}",
+                api.api_id
+            )));
+        }
+
+        if seen.insert(field.clone()) {
+            fields.push(field.clone());
+        }
+    }
+
+    Ok(Some(fields))
 }
 
 pub fn execute_request(plan: &RequestPlan) -> Result<ResponseEnvelope> {
@@ -135,11 +187,11 @@ fn map_krx_error(status: u16, body: &str) -> Option<KrxCliError> {
     }
 }
 
-fn resolve_auth_key(args: &CallArgs) -> Result<String> {
-    match (args.sample, args.auth_key.clone()) {
-        (true, Some(auth_key)) => Ok(auth_key),
+fn resolve_auth_key(sample: bool, auth_key_override: Option<&str>) -> Result<String> {
+    match (sample, auth_key_override) {
+        (true, Some(auth_key)) => Ok(auth_key.to_string()),
         (true, None) => Ok(SAMPLE_AUTH_KEY.to_string()),
-        (false, Some(auth_key)) => Ok(auth_key),
+        (false, Some(auth_key)) => Ok(auth_key.to_string()),
         (false, None) => load_config()?.auth_key.ok_or(KrxCliError::MissingAuthKey),
     }
 }
@@ -216,7 +268,7 @@ fn mask_auth_key(auth_key: &str) -> String {
 mod tests {
     use super::*;
     use crate::catalog::find_api;
-    use crate::cli::ResponseFormat;
+    use crate::runtime::ResponseFormat;
 
     #[test]
     fn parse_params_accepts_date_shortcut() {
@@ -242,23 +294,51 @@ mod tests {
     #[test]
     fn build_request_plan_uses_sample_endpoint() {
         let api = find_api("krx_dd_trd").unwrap();
-        let args = CallArgs {
-            api_id: "krx_dd_trd".to_string(),
-            sample: true,
-            date: Some("20240131".to_string()),
-            params: None,
-            format: ResponseFormat::Json,
-            auth_key: None,
-            body_only: false,
-            dry_run: true,
-        };
         let plan = build_request_plan(
             api,
-            &args,
+            true,
+            ResponseFormat::Json,
+            None,
             BTreeMap::from([("basDd".to_string(), "20240131".to_string())]),
         )
         .unwrap();
         assert!(plan.url.contains("/svc/sample/apis/idx/krx_dd_trd.json"));
+    }
+
+    #[test]
+    fn parse_fields_rejects_unknown_output_field() {
+        let api = find_api("krx_dd_trd").unwrap();
+        let error = parse_fields(Some(&["UNKNOWN".to_string()]), api).unwrap_err();
+        assert!(error.to_string().contains("unknown output field"));
+    }
+
+    #[test]
+    fn parse_fields_accepts_known_output_fields() {
+        let api = find_api("krx_dd_trd").unwrap();
+        let fields = vec!["BAS_DD".to_string(), "IDX_NM".to_string()];
+
+        assert_eq!(
+            parse_fields(Some(&fields), api).unwrap(),
+            Some(vec!["BAS_DD".to_string(), "IDX_NM".to_string()])
+        );
+    }
+
+    #[test]
+    fn parse_fields_rejects_empty_field_name() {
+        let api = find_api("krx_dd_trd").unwrap();
+        let error = parse_fields(Some(&["".to_string()]), api).unwrap_err();
+        assert!(error.to_string().contains("cannot be empty"));
+    }
+
+    #[test]
+    fn validate_query_params_rejects_unknown_field_without_cli() {
+        let api = find_api("krx_dd_trd").unwrap();
+        let error = validate_query_params(
+            api,
+            &BTreeMap::from([("foo".to_string(), "bar".to_string())]),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("only supports basDd"));
     }
 
     #[test]

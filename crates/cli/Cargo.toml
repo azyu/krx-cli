@@ -1,0 +1,19 @@
+[package]
+name = "krx-cli"
+version = "0.1.0"
+edition = "2024"
+description = "Rust CLI for the Korea Exchange (KRX) Open API"
+license = "MIT"
+repository = "https://github.com/azyu/krx-cli"
+homepage = "https://github.com/azyu/krx-cli"
+readme = "../../README.md"
+
+[[bin]]
+name = "krw"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5.32", features = ["derive", "env"] }
+krx-core = { path = "../core" }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
