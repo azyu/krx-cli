@@ -35,6 +35,7 @@
 | [x] | Add linux arm64 release targeting and align Homebrew/docs | Codex |
 | [x] | Define project DoD in `AGENTS.md` and add post-DoD branch/push/PR workflow | Codex |
 | [x] | Commit and push the AGENTS.md DoD update | Codex |
+| [x] | Apply the AGENTS.md DoD update to `main` and push it | Codex |
 
 ## Status Legend
 
