@@ -10,24 +10,24 @@ permissions:
 
 jobs:
   ci:
-    name: Fmt, Test, Build (ubuntu-latest)
+    name: Fmt, Lint, Test, Build (ubuntu-latest)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
-      - name: Format
-        run: cargo fmt --all --check
+      - name: Format check
+        run: make fmt-check
+
+      - name: Lint
+        run: make lint
 
       - name: Test
-        run: cargo test --locked
+        run: make test
 
       - name: Smoke test schema output
         run: cargo run --quiet -p krx-cli -- --output json schema show krx_dd_trd >/dev/null
@@ -36,4 +36,4 @@ jobs:
         run: cargo run --quiet -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample --dry-run >/dev/null
 
       - name: Build release binary
-        run: cargo build --locked -p krx-cli --bin krx --release
+        run: make build-release

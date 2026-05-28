@@ -20,8 +20,11 @@
 ## Build & Development
 
 - Install/build: `cargo build -p krx-cli --bin krx`
-- Format: `cargo fmt --all`
-- Full tests: `cargo test`
+- Format: `make fmt`
+- Format check: `make fmt-check`
+- Lint: `make lint`
+- Full tests: `make test`
+- Install local git hooks: `make hooks-install`
 - Focused test example: `cargo test -p krx-core client::tests::parse_params_rejects_invalid_date`
 - List APIs: `cargo run -p krx-cli -- schema list`
 - Show schema: `cargo run -p krx-cli -- --output json schema show krx_dd_trd`
@@ -54,14 +57,15 @@
 
 ## After Code Changes
 
-1. Run `cargo fmt --all`
+1. Run `make fmt`
 2. Run a targeted test if you changed validation or request planning
-3. Run `cargo test`
-4. Smoke test the CLI:
+3. Run `make lint`
+4. Run `make test`
+5. Smoke test the CLI:
    `cargo run -p krx-cli -- --output json schema show krx_dd_trd`
-5. Smoke test request planning:
+6. Smoke test request planning:
    `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample --dry-run`
-6. If networking code changed, verify one sample call:
+7. If networking code changed, verify one sample call:
    `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample`
 
 ## Definition of Done

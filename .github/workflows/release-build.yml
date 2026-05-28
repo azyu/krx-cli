@@ -34,9 +34,6 @@ jobs:
             exit 1
           fi
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
@@ -52,8 +49,14 @@ jobs:
             exit 1
           fi
 
+      - name: Format check
+        run: make fmt-check
+
+      - name: Lint
+        run: make lint
+
       - name: Test
-        run: cargo test --locked
+        run: make test
 
   build:
     name: Build ${{ matrix.artifact_suffix }}
@@ -80,9 +83,6 @@ jobs:
         with:
           ref: ${{ inputs.release_tag }}
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
@@ -91,7 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo build --locked -p krx-cli --bin krx --release
+          make build-release
 
       - name: Build binary (Windows)
         if: runner.os == 'Windows'
