@@ -91,12 +91,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo build --locked -p krx-cli --bin krw --release
+          cargo build --locked -p krx-cli --bin krx --release
 
       - name: Build binary (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: cargo build --locked -p krx-cli --bin krw --release
+        run: cargo build --locked -p krx-cli --bin krx --release
 
       - name: Package archive (Unix)
         if: runner.os != 'Windows'
@@ -105,35 +105,35 @@ jobs:
           set -euo pipefail
           version="${{ inputs.release_tag }}"
           version="${version#v}"
-          archive_name="krw_${version}_${{ matrix.artifact_suffix }}"
+          archive_name="krx_${version}_${{ matrix.artifact_suffix }}"
 
           mkdir staging
-          cp target/release/krw staging/
+          cp target/release/krx staging/
           cp README.md staging/
           cp LICENSE staging/
-          tar -czf "${archive_name}.tar.gz" -C staging krw README.md LICENSE
+          tar -czf "${archive_name}.tar.gz" -C staging krx README.md LICENSE
 
       - name: Package archive (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $version = "${{ inputs.release_tag }}".TrimStart("v")
-          $archiveName = "krw_${version}_${{ matrix.artifact_suffix }}"
+          $archiveName = "krx_${version}_${{ matrix.artifact_suffix }}"
 
           New-Item -ItemType Directory -Force staging | Out-Null
-          Copy-Item target/release/krw.exe staging/krw.exe
+          Copy-Item target/release/krx.exe staging/krx.exe
           Copy-Item README.md staging/README.md
           Copy-Item LICENSE staging/LICENSE
 
           Push-Location staging
-          Compress-Archive -Path krw.exe, README.md, LICENSE -DestinationPath "../$archiveName.zip" -Force
+          Compress-Archive -Path krx.exe, README.md, LICENSE -DestinationPath "../$archiveName.zip" -Force
           Pop-Location
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: krw_${{ matrix.artifact_suffix }}
-          path: krw_*
+          name: krx_${{ matrix.artifact_suffix }}
+          path: krx_*
 
   release:
     name: Publish GitHub Release
@@ -224,13 +224,13 @@ jobs:
           tag="${{ inputs.release_tag }}"
           version="${tag#v}"
           base_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}"
-          darwin_arm64_sha="$(sha256sum "dist/krw_${version}_darwin_arm64.tar.gz" | awk '{print $1}')"
-          linux_amd64_sha="$(sha256sum "dist/krw_${version}_linux_amd64.tar.gz" | awk '{print $1}')"
-          linux_arm64_sha="$(sha256sum "dist/krw_${version}_linux_arm64.tar.gz" | awk '{print $1}')"
+          darwin_arm64_sha="$(sha256sum "dist/krx_${version}_darwin_arm64.tar.gz" | awk '{print $1}')"
+          linux_amd64_sha="$(sha256sum "dist/krx_${version}_linux_amd64.tar.gz" | awk '{print $1}')"
+          linux_arm64_sha="$(sha256sum "dist/krx_${version}_linux_arm64.tar.gz" | awk '{print $1}')"
 
           mkdir -p tap/Formula
-          cat > tap/Formula/krw.rb <<EOF
-          class Krw < Formula
+          cat > tap/Formula/krx.rb <<EOF
+          class Krx < Formula
             desc "Agent-friendly KRX Open API CLI"
             homepage "https://github.com/${GITHUB_REPOSITORY}"
             version "${version}"
@@ -238,32 +238,32 @@ jobs:
 
             on_macos do
               if Hardware::CPU.arm?
-                url "${base_url}/krw_${version}_darwin_arm64.tar.gz"
+                url "${base_url}/krx_${version}_darwin_arm64.tar.gz"
                 sha256 "${darwin_arm64_sha}"
               else
-                odie "krw Homebrew binaries are only published for macOS arm64."
+                odie "krx Homebrew binaries are only published for macOS arm64."
               end
             end
 
             on_linux do
               if Hardware::CPU.intel?
-                url "${base_url}/krw_${version}_linux_amd64.tar.gz"
+                url "${base_url}/krx_${version}_linux_amd64.tar.gz"
                 sha256 "${linux_amd64_sha}"
               elsif Hardware::CPU.arm?
-                url "${base_url}/krw_${version}_linux_arm64.tar.gz"
+                url "${base_url}/krx_${version}_linux_arm64.tar.gz"
                 sha256 "${linux_arm64_sha}"
               else
-                odie "krw Homebrew binaries are only published for Linux amd64 and arm64."
+                odie "krx Homebrew binaries are only published for Linux amd64 and arm64."
               end
             end
 
             def install
-              bin.install "krw"
+              bin.install "krx"
               prefix.install_metafiles
             end
 
             test do
-              assert_match "Agent-friendly KRX Open API CLI", shell_output("#{bin}/krw --help")
+              assert_match "Agent-friendly KRX Open API CLI", shell_output("#{bin}/krx --help")
             end
           end
           EOF
@@ -278,12 +278,14 @@ jobs:
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Formula/krw.rb
+          old_formula="Formula/k""rw.rb"
+          git rm -f "${old_formula}" || true
+          git add Formula/krx.rb
 
           if git diff --cached --quiet; then
             echo "No Homebrew formula changes detected."
             exit 0
           fi
 
-          git commit -m "chore: update krw formula for ${tag}"
+          git commit -m "chore: update krx formula for ${tag}"
           git push

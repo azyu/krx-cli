@@ -14,7 +14,7 @@
 | [x] | Expand runtime schema data beyond counts to full output field metadata | Codex |
 | [x] | Add richer KRX error mapping for real endpoint failures | Codex |
 | [x] | Add minimal `--body-only` response filtering support | Codex |
-| [x] | Add release install path setup for `~/.local/bin/krw` | Codex |
+| [x] | Add release install path setup for `~/.local/bin/krx` | Codex |
 | [x] | Add `--fields` on top of `--body-only` | Codex |
 | [x] | Evaluate MCP or library surface after CLI basics stabilize | Codex |
 | [x] | Review current project for additional `$rust-cli` updates | Codex |
@@ -36,6 +36,7 @@
 | [x] | Define project DoD in `AGENTS.md` and add post-DoD branch/push/PR workflow | Codex |
 | [x] | Commit and push the AGENTS.md DoD update | Codex |
 | [x] | Apply the AGENTS.md DoD update to `main` and push it | Codex |
+| [x] | Rename public binary and distribution surface to `krx` | Codex |
 
 ## Status Legend
 

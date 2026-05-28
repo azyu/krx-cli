@@ -36,4 +36,4 @@ jobs:
         run: cargo run --quiet -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample --dry-run >/dev/null
 
       - name: Build release binary
-        run: cargo build --locked -p krx-cli --bin krw --release
+        run: cargo build --locked -p krx-cli --bin krx --release
