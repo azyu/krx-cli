@@ -12,8 +12,10 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::cli::{
-    CallArgs, Cli, Commands, ConfigCommands, OutputMode, ResponseFormatArg, SchemaCommands,
+    CallArgs, Cli, Commands, ConfigCommands, McpCommands, OutputMode, ResponseFormatArg,
+    SchemaCommands,
 };
+use crate::mcp;
 use crate::output::{print_json, print_text};
 
 #[derive(Debug, Serialize)]
@@ -74,12 +76,17 @@ pub fn run() -> ExitCode {
         Ok(cli) => cli,
         Err(error) => return emit_clap_error(requested_output_mode, &error),
     };
+    let is_mcp_command = matches!(&cli.command, Commands::Mcp { .. });
     let output_mode = cli.output.unwrap_or(requested_output_mode);
 
     match run_with_cli(cli, output_mode) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
-            emit_error(output_mode, &error);
+            if is_mcp_command {
+                eprintln!("{error}");
+            } else {
+                emit_error(output_mode, &error);
+            }
             ExitCode::from(1)
         }
     }
@@ -135,6 +142,9 @@ fn run_with_cli(cli: Cli, output_mode: OutputMode) -> Result<()> {
                     OutputMode::Text => print_text(&render_config_cleared(&envelope))?,
                 }
             }
+        },
+        Commands::Mcp { command } => match command {
+            McpCommands::Serve => mcp::serve()?,
         },
         Commands::Schema { command } => match command {
             SchemaCommands::List => {
