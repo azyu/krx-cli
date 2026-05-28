@@ -19,7 +19,7 @@
 
 ## Build & Development
 
-- Install/build: `cargo build -p krx-cli --bin krw`
+- Install/build: `cargo build -p krx-cli --bin krx`
 - Format: `cargo fmt --all`
 - Full tests: `cargo test`
 - Focused test example: `cargo test -p krx-core client::tests::parse_params_rejects_invalid_date`

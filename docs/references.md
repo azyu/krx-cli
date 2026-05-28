@@ -2,13 +2,13 @@
 
 ## Project Overview
 
-`krx-cli`는 한국거래소 Open API를 호출하는 Rust 기반 CLI 도구다. 1차 목표는 KRX가 공개한 31개 읽기 전용 API를 안정적으로 호출할 수 있는 실행 파일을 만드는 것이고, 2차 목표는 사람뿐 아니라 AI 에이전트도 안전하게 사용할 수 있는 인터페이스를 제공하는 것이다. 현재 구조는 `krx-cli`와 `krx-core` 두 crate로 나뉘며, `krw` 바이너리는 그대로 유지한다. 범위는 내장 API 카탈로그, 구조화된 스키마 조회, `basDd` 검증, 샘플/실서버 엔드포인트 전환, `--dry-run`, 출력 필드 메타데이터, 최소 응답 축소(`--body-only`), 선택 필드 축소(`--fields`) 지원이다. `--fields`는 JSON body의 row 객체만 줄이고 `OutBlock_1` 같은 최상위 컨테이너는 유지한다. 공용 runtime 표면은 `krx-core`에 두고, MCP는 그 위에 얹는 순서를 따른다.
+`krx-cli`는 한국거래소 Open API를 호출하는 Rust 기반 CLI 도구다. 1차 목표는 KRX가 공개한 31개 읽기 전용 API를 안정적으로 호출할 수 있는 실행 파일을 만드는 것이고, 2차 목표는 사람뿐 아니라 AI 에이전트도 안전하게 사용할 수 있는 인터페이스를 제공하는 것이다. 현재 구조는 `krx-cli`와 `krx-core` 두 crate로 나뉘며, `krx` 바이너리를 배포한다. 범위는 내장 API 카탈로그, 구조화된 스키마 조회, `basDd` 검증, 샘플/실서버 엔드포인트 전환, `--dry-run`, 출력 필드 메타데이터, 최소 응답 축소(`--body-only`), 선택 필드 축소(`--fields`) 지원이다. `--fields`는 JSON body의 row 객체만 줄이고 `OutBlock_1` 같은 최상위 컨테이너는 유지한다. 공용 runtime 표면은 `krx-core`에 두고, MCP는 그 위에 얹는 순서를 따른다.
 
 ## Tech Stack
 
 | Layer | Technology | Version | Rationale |
 |-------|-----------|---------|-----------|
-| Language | Rust | edition 2024 | workspace 구성과 단일 `krw` 바이너리 배포를 함께 가져가기에 적합 |
+| Language | Rust | edition 2024 | workspace 구성과 단일 `krx` 바이너리 배포를 함께 가져가기에 적합 |
 | CLI | clap | 4.x | Rust 생태계 표준 CLI 파서, derive 기반 선언형 인터페이스 제공 |
 | HTTP | reqwest (blocking) | 0.12.x | 단순 GET 호출, TLS 지원, 초기 스캐폴드에 충분 |
 | Serialization | serde / serde_json | 1.x | 구조화된 출력과 JSON 입력 파싱에 필요 |

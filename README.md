@@ -1,6 +1,6 @@
 # krx-cli
 
-한국거래소(KRX) Open API용 Rust CLI입니다. 공식 바이너리 이름은 `krw`이며, 터미널에서 공개된 KRX 읽기 API를 조회하고, 내장 스키마 카탈로그로 요청 형태를 확인할 수 있습니다.
+한국거래소(KRX) Open API용 Rust CLI입니다. 공식 바이너리 이름은 `krx`이며, 터미널에서 공개된 KRX 읽기 API를 조회하고, 내장 스키마 카탈로그로 요청 형태를 확인할 수 있습니다.
 
 현재 범위는 읽기 전용 CLI입니다. 공개된 31개 API 메타데이터를 내장하고, `schema` 조회, 샘플/실서버 호출, 구조화 출력, 엄격한 입력 검증, `--dry-run`, `--body-only`, `--fields`를 지원합니다. 저장소는 `krx-cli`와 `krx-core` 두 crate로 나뉘며, clap 없이 정규화된 query map으로 호출할 수 있는 library-first runtime 표면은 `krx-core`가 제공합니다.
 
@@ -13,27 +13,27 @@
 
 ```bash
 brew tap <owner>/<tap>
-brew install <owner>/<tap>/krw
-krw --help
+brew install <owner>/<tap>/krx
+krx --help
 ```
 
 Homebrew tap 이름은 배포자가 공개한 tap 저장소를 사용해야 합니다. 이 저장소 자체만으로는 tap 이름이 고정되지 않으므로, 실제 배포 시점에는 release 안내나 프로젝트 문서에 적힌 `<owner>/<tap>` 값을 넣으면 됩니다. 현재 Homebrew 배포 타깃은 `linux amd64`, `linux arm64`, `macOS arm64`입니다.
 
 ### GitHub Release 아카이브
 
-Rust 없이 설치하려면 [GitHub Releases](https://github.com/azyu/krx-cli/releases)에서 현재 OS/아키텍처에 맞는 아카이브를 내려받아 `krw` 바이너리만 설치하면 됩니다. 현재 릴리스 타깃은 `linux amd64`, `linux arm64`, `macOS arm64`, `Windows x64`, `Windows arm64`입니다.
+Rust 없이 설치하려면 [GitHub Releases](https://github.com/azyu/krx-cli/releases)에서 현재 OS/아키텍처에 맞는 아카이브를 내려받아 `krx` 바이너리만 설치하면 됩니다. 현재 릴리스 타깃은 `linux amd64`, `linux arm64`, `macOS arm64`, `Windows x64`, `Windows arm64`입니다.
 
 ```bash
-tar -xzf krw_<version>_<platform>_<arch>.tar.gz
-install -m 755 krw ~/.local/bin/krw
-krw --help
+tar -xzf krx_<version>_<platform>_<arch>.tar.gz
+install -m 755 krx ~/.local/bin/krx
+krx --help
 ```
 
 Windows PowerShell 예시:
 
 ```powershell
-Expand-Archive krw_<version>_windows_amd64.zip .
-.\krw.exe --help
+Expand-Archive krx_<version>_windows_amd64.zip .
+.\krx.exe --help
 ```
 
 ### From source
@@ -41,16 +41,16 @@ Expand-Archive krw_<version>_windows_amd64.zip .
 Rust toolchain이 준비되어 있다면 release 바이너리를 바로 빌드할 수 있습니다.
 
 ```bash
-cargo build --release -p krx-cli --bin krw
-install -m 755 target/release/krw ~/.local/bin/krw
-krw --help
+cargo build --release -p krx-cli --bin krx
+install -m 755 target/release/krx ~/.local/bin/krx
+krx --help
 ```
 
 저장소에 포함된 설치 스크립트를 써도 됩니다.
 
 ```bash
 ./scripts/install-release.sh
-~/.local/bin/krw --help
+~/.local/bin/krx --help
 ```
 
 설치 없이 바로 실행하려면:
@@ -87,7 +87,7 @@ cargo run -p krx-cli -- config show
 
 ```bash
 export KRX_API_KEY="발급받은 인증키"
-krw call krx_dd_trd --date 20240131
+krx call krx_dd_trd --date 20240131
 ```
 
 실서버 인증키 우선순위는 `--auth-key` > `KRX_API_KEY` > `~/.config/krx/config.json`입니다.
@@ -95,11 +95,11 @@ krw call krx_dd_trd --date 20240131
 ### 4. 샘플 호출로 동작 확인
 
 ```bash
-krw schema show krx_dd_trd
-krw call krx_dd_trd --date 20200414 --sample
-krw --output json call krx_dd_trd --date 20200414 --sample --body-only
-krw --output json call krx_dd_trd --date 20200414 --sample --body-only --fields BAS_DD,IDX_NM
-krw --output json call krx_dd_trd --date 20200414 --sample --fields BAS_DD,IDX_NM
+krx schema show krx_dd_trd
+krx call krx_dd_trd --date 20200414 --sample
+krx --output json call krx_dd_trd --date 20200414 --sample --body-only
+krx --output json call krx_dd_trd --date 20200414 --sample --body-only --fields BAS_DD,IDX_NM
+krx --output json call krx_dd_trd --date 20200414 --sample --fields BAS_DD,IDX_NM
 ```
 
 ## 사용 예시
@@ -107,33 +107,33 @@ krw --output json call krx_dd_trd --date 20200414 --sample --fields BAS_DD,IDX_N
 ### 스키마 조회
 
 ```bash
-krw schema list
-krw schema show krx_dd_trd
-krw --output json schema show krx_dd_trd
+krx schema list
+krx schema show krx_dd_trd
+krx --output json schema show krx_dd_trd
 ```
 
 ### 요청 계획 확인
 
 ```bash
-krw --output json call krx_dd_trd --date 20200414 --sample --dry-run
-krw --output json call krx_dd_trd --params '{"basDd":"20200414"}' --sample --dry-run
+krx --output json call krx_dd_trd --date 20200414 --sample --dry-run
+krx --output json call krx_dd_trd --params '{"basDd":"20200414"}' --sample --dry-run
 ```
 
 ### 샘플 / 실서버 호출
 
 ```bash
-krw call krx_dd_trd --date 20200414 --sample
-krw --output json call krx_dd_trd --date 20200414 --sample
-krw --output json call krx_dd_trd --date 20240131
-krw call krx_dd_trd --date 20200414 --sample --format xml
+krx call krx_dd_trd --date 20200414 --sample
+krx --output json call krx_dd_trd --date 20200414 --sample
+krx --output json call krx_dd_trd --date 20240131
+krx call krx_dd_trd --date 20200414 --sample --format xml
 ```
 
 ### 설정 확인 / 정리
 
 ```bash
-krw config path
-krw config show
-krw config clear-auth-key
+krx config path
+krx config show
+krx config clear-auth-key
 ```
 
 ## 지원 표면
@@ -212,5 +212,5 @@ cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample -
 실서버 호출까지 확인하려면 승인된 인증키를 준비한 뒤 아래 명령을 사용합니다.
 
 ```bash
-krw --output json call krx_dd_trd --date 20240131
+krx --output json call krx_dd_trd --date 20240131
 ```

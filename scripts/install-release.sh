@@ -10,7 +10,7 @@ cargo install \
   --path "$repo_root/crates/cli" \
   --root "$install_root" \
   --force \
-  --bin krw
+  --bin krx
 
 mkdir -p "$install_bin_dir"
-printf 'installed %s\n' "${install_bin_dir}/krw"
+printf 'installed %s\n' "${install_bin_dir}/krx"

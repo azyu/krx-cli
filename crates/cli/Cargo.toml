@@ -9,7 +9,7 @@ homepage = "https://github.com/azyu/krx-cli"
 readme = "../../README.md"
 
 [[bin]]
-name = "krw"
+name = "krx"
 path = "src/main.rs"
 
 [dependencies]

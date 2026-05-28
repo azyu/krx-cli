@@ -1,12 +1,12 @@
 use std::process::Command;
 
-fn krw_command() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_krw"))
+fn krx_command() -> Command {
+    Command::new(env!("CARGO_BIN_EXE_krx"))
 }
 
 #[test]
 fn json_output_writes_structured_parse_error_to_stdout() {
-    let output = krw_command()
+    let output = krx_command()
         .args(["--output", "json", "--bogus"])
         .output()
         .expect("command should run");
@@ -28,7 +28,7 @@ fn json_output_writes_structured_parse_error_to_stdout() {
 
 #[test]
 fn json_output_writes_structured_error_to_stdout() {
-    let output = krw_command()
+    let output = krx_command()
         .args([
             "--output",
             "json",
@@ -58,7 +58,7 @@ fn json_output_writes_structured_error_to_stdout() {
 
 #[test]
 fn text_output_writes_parse_error_to_stderr() {
-    let output = krw_command()
+    let output = krx_command()
         .args(["--output", "text", "--bogus"])
         .output()
         .expect("command should run");
@@ -72,7 +72,7 @@ fn text_output_writes_parse_error_to_stderr() {
 
 #[test]
 fn default_output_writes_parse_error_to_stdout_when_stdout_is_not_tty() {
-    let output = krw_command()
+    let output = krx_command()
         .args(["--bogus"])
         .output()
         .expect("command should run");
@@ -94,7 +94,7 @@ fn default_output_writes_parse_error_to_stdout_when_stdout_is_not_tty() {
 
 #[test]
 fn text_output_writes_runtime_error_to_stderr() {
-    let output = krw_command()
+    let output = krx_command()
         .args([
             "--output",
             "text",
