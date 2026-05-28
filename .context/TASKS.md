@@ -36,6 +36,13 @@
 | [x] | Define project DoD in `AGENTS.md` and add post-DoD branch/push/PR workflow | Codex |
 | [x] | Commit and push the AGENTS.md DoD update | Codex |
 | [x] | Apply the AGENTS.md DoD update to `main` and push it | Codex |
+| [x] | Review proposed repo-local Rust toolchain, Makefile, git hooks, and CI check flow | Codex |
+| [x] | Add pinned Rust toolchain, Makefile entrypoints, repo-local git hooks, and align CI/docs | Codex |
+| [x] | Expand real-endpoint KRX error normalization beyond the two known 401 cases | Codex |
+| [x] | Implement a minimal read-only MCP adapter on top of `krx-core` via orchestrated leader-agent workflow | Codex |
+| [x] | Add automated KRX catalog drift detection for the built-in API inventory | Codex |
+| [x] | Build release binary and install it to `~/.local/bin/krx` | Codex |
+| [x] | Review why the `krx-cli` project used the previous binary name | Codex |
 | [x] | Rename public binary and distribution surface to `krx` | Codex |
 
 ## Status Legend

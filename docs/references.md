@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-`krx-cli`는 한국거래소 Open API를 호출하는 Rust 기반 CLI 도구다. 1차 목표는 KRX가 공개한 31개 읽기 전용 API를 안정적으로 호출할 수 있는 실행 파일을 만드는 것이고, 2차 목표는 사람뿐 아니라 AI 에이전트도 안전하게 사용할 수 있는 인터페이스를 제공하는 것이다. 현재 구조는 `krx-cli`와 `krx-core` 두 crate로 나뉘며, `krx` 바이너리를 배포한다. 범위는 내장 API 카탈로그, 구조화된 스키마 조회, `basDd` 검증, 샘플/실서버 엔드포인트 전환, `--dry-run`, 출력 필드 메타데이터, 최소 응답 축소(`--body-only`), 선택 필드 축소(`--fields`) 지원이다. `--fields`는 JSON body의 row 객체만 줄이고 `OutBlock_1` 같은 최상위 컨테이너는 유지한다. 공용 runtime 표면은 `krx-core`에 두고, MCP는 그 위에 얹는 순서를 따른다.
+`krx-cli`는 한국거래소 Open API를 호출하는 Rust 기반 CLI 도구다. 1차 목표는 KRX가 공개한 31개 읽기 전용 API를 안정적으로 호출할 수 있는 실행 파일을 만드는 것이고, 2차 목표는 사람뿐 아니라 AI 에이전트도 안전하게 사용할 수 있는 인터페이스를 제공하는 것이다. 현재 구조는 `krx-cli`와 `krx-core` 두 crate로 나뉘며, `krx` 바이너리를 배포한다. 범위는 내장 API 카탈로그, 구조화된 스키마 조회, `basDd` 검증, 샘플/실서버 엔드포인트 전환, `--dry-run`, 출력 필드 메타데이터, 최소 응답 축소(`--body-only`), 선택 필드 축소(`--fields`), 그리고 `krx mcp serve` 기반의 최소 read-only MCP 노출까지 포함한다. `--fields`는 JSON body의 row 객체만 줄이고 `OutBlock_1` 같은 최상위 컨테이너는 유지한다. 실서버 non-2xx 응답은 알려진 `401` 메시지는 전용 오류로, 그 외는 일반 `krx_api_error`로 정규화한다. 공용 runtime 표면은 `krx-core`에 두고, CLI와 MCP가 함께 재사용한다.
 
 ## Tech Stack
 
@@ -59,6 +59,27 @@
 - **Decision:** 먼저 clap 없는 runtime API로 요청 계획과 실행 경로를 고정하고, MCP는 그 공용 표면을 재사용하는 후속 작업으로 둔다.
 - **Consequences:** 이번 단계 구현 범위는 작게 유지되고, 이후 MCP 작업은 CLI 로직 복제 없이 runtime API 어댑터에 집중할 수 있다.
 
+### ADR-7: 실서버 비정상 응답은 모두 KRX 오류로 정규화한다
+
+- **Status:** Accepted
+- **Context:** KRX 실서버는 알려진 `401` 두 케이스 외에도 다른 상태 코드나 비정상 본문을 돌려줄 수 있다. 이를 그대로 통과시키면 CLI와 library 사용자가 일관된 오류 계약을 얻지 못한다.
+- **Decision:** `401 Unauthorized Key`와 `401 Unauthorized API Call`은 전용 오류로 유지하고, 그 외 모든 non-2xx 응답은 `krx_api_error`로 정규화한다. JSON body의 `respCode`/`respMsg`가 있으면 메시지에 반영하고, 없으면 HTTP 상태만 담은 일반 오류로 반환한다.
+- **Consequences:** read-only 호출 경로의 오류 계약이 안정화된다. 다만 `401` 외의 KRX 세부 메시지별 전용 enum은 당분간 늘리지 않는다.
+
+### ADR-8: MCP는 `krx` 바이너리의 `mcp serve` 서브커맨드로 1단계를 연다
+
+- **Status:** Accepted
+- **Context:** runtime library 표면이 고정된 뒤에는 MCP를 붙일 수 있지만, 별도 바이너리나 별도 crate로 바로 확장하면 배포 표면과 결정 비용이 함께 커진다.
+- **Decision:** phase 1 MCP는 별도 바이너리 없이 `krx mcp serve`로 제공한다. transport는 stdio, capability는 tools만 열고, tool 표면은 `krx_list_apis`, `krx_get_api_schema`, `krx_call_api` 세 가지로 제한한다. `krx_call_api`는 기존 CLI 검증과 runtime을 재사용하고 `dry_run`도 함께 노출한다. 프로토콜은 `2025-06-18`을 기본으로 협상하고, `2025-03-26`도 수용한다.
+- **Consequences:** 사용자에게는 여전히 `krx` 하나만 배포하면 되고, MCP 어댑터는 CLI 로직 복제 없이 `krx-core` 위에 얹힌다. 대신 prompts/resources 같은 추가 MCP capability는 후속 단계로 남는다.
+
+### ADR-9: 카탈로그 드리프트 감지는 deterministic parser test와 live check를 분리한다
+
+- **Status:** Accepted
+- **Context:** 내장 카탈로그는 런타임과 MCP 모두의 기반이라 upstream 서비스 목록 변경을 빨리 감지해야 한다. 다만 CI의 기본 테스트는 deterministic해야 하고, KRX 사이트 live HTML 파싱은 네트워크와 페이지 상태에 따라 흔들릴 수 있다.
+- **Decision:** `krx-core`에 HTML 파서와 inventory diff 로직을 두고, 단위 테스트는 고정 fixture 문자열로 검증한다. 실제 upstream 확인은 `cargo run -p krx-core --example catalog_drift`와 `./scripts/check-catalog-drift.sh`로 분리하고, drift가 있으면 non-zero exit으로 실패시킨다. gating 기준은 `api_id`, `path`, `name`, `category`, 전체 개수에 둔다. `description`은 현재 내장 카탈로그가 더 짧게 정규화되어 있어 정보용으로만 유지하고 실패 조건에는 넣지 않는다.
+- **Consequences:** 기본 `cargo test`는 안정적으로 유지되고, live drift check는 필요할 때나 스케줄드 CI에서 별도로 돌릴 수 있다. 새 서비스가 생기거나 `api_id/path/name/category/count`가 바뀌면 보고서로 드러난다.
+
 ## Key References
 
 - KRX Open API 서비스 목록: https://openapi.krx.co.kr/contents/OPP/INFO/service/OPPINFO004.cmd
@@ -84,6 +105,4 @@
 
 ## Open Questions
 
-- 실서버 호출 시 에러 코드 매핑을 얼마나 더 세밀하게 할지
-- 새 `krx-core` 표면 위에 MCP 어댑터를 별도 바이너리로 둘지, 별도 crate로 둘지
-- KRX API 변경 감지를 자동화할지
+현재 열린 질문 없음

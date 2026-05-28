@@ -31,6 +31,8 @@ pub struct ResponseEnvelope {
 
 #[derive(Debug, Deserialize)]
 struct KrxErrorResponse {
+    #[serde(rename = "respCode")]
+    resp_code: Option<String>,
     #[serde(rename = "respMsg")]
     resp_msg: Option<String>,
 }
@@ -175,16 +177,36 @@ pub fn execute_request(plan: &RequestPlan) -> Result<ResponseEnvelope> {
 }
 
 fn map_krx_error(status: u16, body: &str) -> Option<KrxCliError> {
-    if status != 401 {
+    if (200..300).contains(&status) {
         return None;
     }
 
-    let payload: KrxErrorResponse = serde_json::from_str(body).ok()?;
-    match payload.resp_msg.as_deref() {
-        Some("Unauthorized Key") => Some(KrxCliError::UnauthorizedKey),
-        Some("Unauthorized API Call") => Some(KrxCliError::UnauthorizedApiCall),
-        _ => None,
+    if let Ok(KrxErrorResponse {
+        resp_code,
+        resp_msg,
+    }) = serde_json::from_str::<KrxErrorResponse>(body)
+    {
+        match resp_msg.as_deref() {
+            Some("Unauthorized Key") if status == 401 => return Some(KrxCliError::UnauthorizedKey),
+            Some("Unauthorized API Call") if status == 401 => {
+                return Some(KrxCliError::UnauthorizedApiCall);
+            }
+            Some(_) => {
+                return Some(KrxCliError::KrxApiError {
+                    status,
+                    resp_code,
+                    resp_msg,
+                });
+            }
+            None => {}
+        }
     }
+
+    Some(KrxCliError::KrxApiError {
+        status,
+        resp_code: None,
+        resp_msg: None,
+    })
 }
 
 fn resolve_auth_key(sample: bool, auth_key_override: Option<&str>) -> Result<String> {
@@ -356,5 +378,46 @@ mod tests {
         )
         .unwrap();
         assert!(matches!(error, KrxCliError::UnauthorizedApiCall));
+    }
+
+    #[test]
+    fn map_krx_error_maps_structured_non_401_error() {
+        let error = map_krx_error(403, r#"{"respCode":"403","respMsg":"Forbidden"}"#).unwrap();
+
+        match error {
+            KrxCliError::KrxApiError {
+                status,
+                resp_code,
+                resp_msg,
+            } => {
+                assert_eq!(status, 403);
+                assert_eq!(resp_code.as_deref(), Some("403"));
+                assert_eq!(resp_msg.as_deref(), Some("Forbidden"));
+            }
+            other => panic!("expected KrxApiError, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn map_krx_error_maps_unstructured_non_2xx_error() {
+        let error = map_krx_error(500, "<html>server error</html>").unwrap();
+
+        match error {
+            KrxCliError::KrxApiError {
+                status,
+                resp_code,
+                resp_msg,
+            } => {
+                assert_eq!(status, 500);
+                assert!(resp_code.is_none());
+                assert!(resp_msg.is_none());
+            }
+            other => panic!("expected KrxApiError, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn map_krx_error_ignores_success_status() {
+        assert!(map_krx_error(200, r#"{"respCode":"200","respMsg":"OK"}"#).is_none());
     }
 }

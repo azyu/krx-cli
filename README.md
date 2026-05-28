@@ -2,7 +2,7 @@
 
 한국거래소(KRX) Open API용 Rust CLI입니다. 공식 바이너리 이름은 `krx`이며, 터미널에서 공개된 KRX 읽기 API를 조회하고, 내장 스키마 카탈로그로 요청 형태를 확인할 수 있습니다.
 
-현재 범위는 읽기 전용 CLI입니다. 공개된 31개 API 메타데이터를 내장하고, `schema` 조회, 샘플/실서버 호출, 구조화 출력, 엄격한 입력 검증, `--dry-run`, `--body-only`, `--fields`를 지원합니다. 저장소는 `krx-cli`와 `krx-core` 두 crate로 나뉘며, clap 없이 정규화된 query map으로 호출할 수 있는 library-first runtime 표면은 `krx-core`가 제공합니다.
+현재 범위는 읽기 전용 CLI와 최소 MCP 서버입니다. 공개된 31개 API 메타데이터를 내장하고, `schema` 조회, 샘플/실서버 호출, 구조화 출력, 엄격한 입력 검증, `--dry-run`, `--body-only`, `--fields`, `mcp serve`를 지원합니다. 저장소는 `krx-cli`와 `krx-core` 두 crate로 나뉘며, clap 없이 정규화된 query map으로 호출할 수 있는 library-first runtime 표면은 `krx-core`가 제공합니다.
 
 > [!IMPORTANT]
 > 샘플 호출은 공개 샘플 키로 바로 실행할 수 있지만, 실서버 호출은 KRX 포털에서 발급받고 승인된 인증키가 필요합니다.
@@ -136,14 +136,29 @@ krx config show
 krx config clear-auth-key
 ```
 
+### MCP 서버
+
+```bash
+cargo run -p krx-cli -- mcp serve
+```
+
+phase 1 MCP 서버는 stdio로 동작하며 read-only tool 세 가지만 노출합니다.
+
+- `krx_list_apis`
+- `krx_get_api_schema`
+- `krx_call_api`
+
+`krx_call_api`는 `api_id`, `sample`, `date`, `params`, `format`, `fields`, `dry_run`을 받습니다. `date`와 `params`는 함께 쓸 수 없고, `fields`는 `format=json`이면서 `dry_run=false`일 때만 허용합니다.
+
 ## 지원 표면
 
 - `schema`: 지원 API 목록 조회와 API별 요청/응답 스키마 출력
 - `call`: 샘플/실서버 GET 호출, `--date` 또는 `--params` 입력, `--dry-run`, `--format json|xml`, `--body-only`, `--fields`
+- `mcp serve`: stdio MCP 서버, `krx_list_apis`, `krx_get_api_schema`, `krx_call_api` 도구 제공
 - `config`: 설정 경로 확인, 저장된 인증키 확인, 인증키 저장/삭제
-- `krx-core` library surface: 정규화된 query map과 선택 필드로 `plan_call` / `execute_call` 가능, MCP는 이 표면 위에 나중에 얹을 예정
+- `krx-core` library surface: 정규화된 query map과 선택 필드로 `plan_call` / `execute_call` 가능, `krx`와 `mcp serve`가 이 표면을 함께 재사용
 - 내장 카탈로그: 지수, 주식, 증권상품, 채권, 파생상품, 일반상품, ESG까지 공개된 31개 API 메타데이터 포함
-- 구조화 출력: `--output json`으로 기계 친화적 출력 제공, 실패 시에도 `{ "error": { "code", "message" } }` 계약을 stdout에 유지, `schema show`에는 `output_field_names` 포함
+- 구조화 출력: `--output json`으로 기계 친화적 출력 제공, 실패 시에도 `{ "error": { "code", "message" } }` 계약을 stdout에 유지, `schema show`에는 `output_field_names` 포함, 실서버 non-2xx 응답은 `krx_api_error` 또는 전용 401 오류로 정규화
 - 입력 검증: 미지원 `api_id`, 잘못된 `basDd`, 알 수 없는 query field, 제어 문자, 예약 URL 문자 거부
 
 ## 글로벌 플래그
@@ -172,7 +187,7 @@ krx config clear-auth-key
 > `--fields`는 API 카탈로그에 등록된 `output_field_names`만 허용합니다. `OutBlock_1` 같은 최상위 컨테이너는 유지한 채 body 안의 row 객체만 줄이며, envelope 모드와 `--body-only` 모두에 먼저 적용됩니다.
 
 > [!NOTE]
-> 실서버 `401` 응답은 `Unauthorized Key`와 `Unauthorized API Call`을 구분해서 안내합니다. 키 자체가 잘못된 경우와 API 이용신청이 아직 승인되지 않은 경우를 서로 다른 메시지로 보여줍니다.
+> 실서버 비정상 응답은 모두 정규화합니다. `401`의 `Unauthorized Key`와 `Unauthorized API Call`은 별도 오류 코드로 구분하고, 그 외 non-2xx 응답은 `krx_api_error`로 묶어 HTTP 상태와 KRX `respCode`/`respMsg`가 있으면 메시지에 반영합니다.
 
 ## 프로젝트 구조
 
@@ -184,6 +199,7 @@ krx-cli/
 │   │       ├── main.rs    # 바이너리 엔트리포인트
 │   │       ├── app.rs     # 명령 디스패치와 출력 모드 처리
 │   │       ├── cli.rs     # clap 기반 CLI 정의
+│   │       ├── mcp.rs     # stdio MCP 서버 어댑터
 │   │       └── output.rs  # JSON/text 출력 헬퍼
 │   └── core/
 │       └── src/
@@ -198,15 +214,27 @@ krx-cli/
 자세한 API 인벤토리는 [`docs/reference.md`](docs/reference.md), 설계 근거와 참고 자료는 [`docs/references.md`](docs/references.md)에 정리되어 있습니다.
 
 > [!NOTE]
-> MCP 서버/어댑터는 아직 구현하지 않습니다. 먼저 `krx-core` runtime library 표면을 고정하고, 이후 단계에서 그 위에 얹는 순서를 따릅니다.
+> 현재 MCP는 phase 1 범위만 구현합니다. `krx mcp serve`는 stdio transport와 tools capability만 제공하고, 리소스/프롬프트는 아직 노출하지 않습니다.
 
 ## 테스트
 
 ```bash
-cargo fmt --all
-cargo test
+make fmt
+make fmt-check
+make lint
+make test
+make drift-check
+make hooks-install
 cargo run -p krx-cli -- --output json schema show krx_dd_trd
 cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample --dry-run
+```
+
+개발 체크 기준과 다른 저장소로 옮길 때의 체크리스트는 [`docs/development-checks.md`](docs/development-checks.md)에 정리되어 있습니다.
+
+내장 카탈로그가 현재 KRX 공개 서비스 목록과 어긋나는지 점검하려면 아래 명령을 사용합니다.
+
+```bash
+./scripts/check-catalog-drift.sh
 ```
 
 실서버 호출까지 확인하려면 승인된 인증키를 준비한 뒤 아래 명령을 사용합니다.
