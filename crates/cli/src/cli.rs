@@ -49,6 +49,10 @@ pub enum Commands {
         #[command(subcommand)]
         command: ConfigCommands,
     },
+    Mcp {
+        #[command(subcommand)]
+        command: McpCommands,
+    },
     Schema {
         #[command(subcommand)]
         command: SchemaCommands,
@@ -62,6 +66,11 @@ pub enum ConfigCommands {
     Show,
     SetAuthKey { auth_key: String },
     ClearAuthKey,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum McpCommands {
+    Serve,
 }
 
 #[derive(Debug, Subcommand)]
@@ -157,6 +166,18 @@ mod tests {
                 );
             }
             _ => panic!("expected call command"),
+        }
+    }
+
+    #[test]
+    fn mcp_serve_parses() {
+        let cli = Cli::try_parse_from(["krx", "mcp", "serve"]).unwrap();
+
+        match cli.command {
+            Commands::Mcp {
+                command: McpCommands::Serve,
+            } => {}
+            _ => panic!("expected mcp serve command"),
         }
     }
 }
