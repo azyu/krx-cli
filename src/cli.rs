@@ -25,7 +25,7 @@ impl std::fmt::Display for ResponseFormat {
 }
 
 #[derive(Debug, Parser)]
-#[command(name = "krw", version, about = "Agent-friendly KRX Open API CLI")]
+#[command(name = "krx", version, about = "Agent-friendly KRX Open API CLI")]
 pub struct Cli {
     #[arg(long, global = true, env = "KRX_OUTPUT")]
     pub output: Option<OutputMode>,
@@ -96,12 +96,18 @@ pub struct CallArgs {
 
 #[cfg(test)]
 mod tests {
+    use clap::CommandFactory;
     use super::*;
+
+    #[test]
+    fn command_name_is_krx() {
+        assert_eq!(Cli::command().get_name(), "krx");
+    }
 
     #[test]
     fn call_parses_body_only_flag() {
         let cli = Cli::try_parse_from([
-            "krw",
+            "krx",
             "call",
             "krx_dd_trd",
             "--date",

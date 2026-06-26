@@ -7,7 +7,7 @@ Add an explicitly experimental CLI path for KRX MDCSTAT024, `투자자별 순매
 The target command is:
 
 ```bash
-krw experimental mdc investor-net-buy \
+krx experimental mdc investor-net-buy \
   --date 20260626 \
   --market ALL \
   --investor foreigner \
@@ -43,7 +43,7 @@ This avoids mixing a brittle web-screen integration into the stable schema catal
 Command:
 
 ```bash
-krw experimental mdc investor-net-buy [OPTIONS]
+krx experimental mdc investor-net-buy [OPTIONS]
 ```
 
 Options:

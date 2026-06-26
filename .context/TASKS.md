@@ -14,7 +14,7 @@
 | [x] | Expand runtime schema data beyond counts to full output field metadata | Codex |
 | [x] | Add richer KRX error mapping for real endpoint failures | Codex |
 | [x] | Add minimal `--body-only` response filtering support | Codex |
-| [x] | Add release install path setup for `~/.local/bin/krw` | Codex |
+| [x] | Add release install path setup for `~/.local/bin/krx` | Codex |
 | [ ] | Evaluate `--fields` on top of `--body-only` | — |
 | [ ] | Evaluate MCP or library surface after CLI basics stabilize | — |
 | [x] | Review current project for additional `$rust-cli` updates | Codex |
@@ -22,6 +22,8 @@
 | [x] | Make README wording more polite and user-friendly | Codex |
 | [x] | Check whether `~/.agents/skills/create-readme` exists and is readable | Codex |
 | [x] | Commit and push `README.md` wording updates | Codex |
+| [x] | Assess MDCSTAT024 investor net-buy source claim | Codex |
+| [x] | Rename public binary from `krw` to `krx` | Codex |
 
 ## Status Legend
 

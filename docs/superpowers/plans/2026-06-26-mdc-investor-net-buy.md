@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add `krw experimental mdc investor-net-buy` for KRX MDCSTAT024 while keeping the existing Open API `call` and `schema` paths unchanged.
+**Goal:** Add `krx experimental mdc investor-net-buy` for KRX MDCSTAT024 while keeping the existing Open API `call` and `schema` paths unchanged.
 
 **Architecture:** The stable Open API client remains in `src/client.rs`. A new `src/mdc.rs` owns MDC request planning, code mappings, live HTTP execution, error mapping, and JSON row limiting. `src/cli.rs` only adds the experimental command tree; `src/lib.rs` wires dry-run and execution output.
 
@@ -289,7 +289,7 @@ Append this test to the existing `#[cfg(test)] mod tests` in `src/cli.rs`:
     #[test]
     fn experimental_mdc_investor_net_buy_parses() {
         let cli = Cli::try_parse_from([
-            "krw",
+            "krx",
             "experimental",
             "mdc",
             "investor-net-buy",

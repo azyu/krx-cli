@@ -16,10 +16,10 @@ cargo run -- call krx_dd_trd --date 20200414 --sample
 
 ```bash
 ./scripts/install-release.sh
-~/.local/bin/krw --help
+~/.local/bin/krx --help
 ```
 
-위 스크립트는 릴리즈 빌드 후 `~/.local/bin/krw`로 설치합니다.
+위 스크립트는 릴리즈 빌드 후 `~/.local/bin/krx`로 설치합니다.
 
 발급 키를 저장해 두고 싶다면 다음 명령을 사용할 수 있습니다.
 
