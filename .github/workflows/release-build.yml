@@ -291,6 +291,7 @@ jobs:
 
             test do
               assert_match "Agent-friendly KRX Open API CLI", shell_output("#{bin}/krx --help")
+              assert_match "Usage: krx mcp", shell_output("#{bin}/krx mcp --help")
             end
           end
           EOF
