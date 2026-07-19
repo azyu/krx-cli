@@ -41,7 +41,7 @@
 
 | [x] | Review KIS foreign-institution ranking implementation feasibility | Codex |
 | [x] | Add Debian and Ubuntu Linux release support | Main |
-| [~] | Publish v0.1.0 release and Homebrew formula | Main |
+| [x] | Publish v0.1.0 release and Homebrew formula | Main |
 ## Status Legend
 
 - `[ ]` — Pending
