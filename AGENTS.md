@@ -7,6 +7,7 @@
 - `crates/cli/src/main.rs`: binary entrypoint
 - `crates/cli/src/app.rs`: command dispatch and output mode resolution
 - `crates/cli/src/cli.rs`: `clap` models for subcommands and flags
+- `crates/cli/src/mcp.rs`: read-only stdio MCP server adapter
 - `crates/cli/src/output.rs`: JSON/text output helpers
 - `crates/core/src/catalog.rs`: built-in KRX API registry and schema views
 - `crates/core/src/client.rs`: parameter parsing, validation, request planning, HTTP execution
@@ -27,6 +28,7 @@
 - Show schema: `cargo run -p krx-cli -- --output json schema show krx_dd_trd`
 - Dry-run call: `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample --dry-run`
 - Sample live call: `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample`
+- MCP server: `cargo run -p krx-cli -- mcp serve`
 - Config path: `cargo run -p krx-cli -- config path`
 - Save auth key: `cargo run -p krx-cli -- config set-auth-key YOUR_ISSUED_KEY`
 - Show config: `cargo run -p krx-cli -- --output json config show`
@@ -63,6 +65,8 @@
    `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample --dry-run`
 6. If networking code changed, verify one sample call:
    `cargo run -p krx-cli -- --output json call krx_dd_trd --date 20200414 --sample`
+7. If MCP code changed, run `cargo test -p krx-cli --test mcp_stdio`
+8. Smoke test MCP discovery: `cargo run -p krx-cli -- mcp --help`
 
 ## Definition of Done
 

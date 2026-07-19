@@ -42,6 +42,7 @@
 | [x] | Review KIS foreign-institution ranking implementation feasibility | Codex |
 | [x] | Add Debian and Ubuntu Linux release support | Main |
 | [x] | Publish v0.1.0 release and Homebrew formula | Main |
+| [~] | Diagnose platform MCP command mismatch | Main |
 ## Status Legend
 
 - `[ ]` — Pending
