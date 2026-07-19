@@ -12,6 +12,26 @@ cargo run -- schema show krx_dd_trd
 cargo run -- call krx_dd_trd --date 20200414 --sample
 ```
 
+### GitHub Release 아카이브
+
+릴리즈가 게시되면 [GitHub Releases](https://github.com/azyu/krx-cli/releases)에서 OS와 CPU에 맞는 아카이브를 내려받을 수 있습니다.
+
+- `krx_<version>_linux_amd64.tar.gz`
+- `krx_<version>_linux_arm64.tar.gz`
+- `krx_<version>_darwin_arm64.tar.gz`
+- `krx_<version>_windows_amd64.zip`
+- `krx_<version>_windows_arm64.zip`
+
+Linux 아카이브는 정적 musl 바이너리를 포함하므로 별도 glibc/OpenSSL 런타임 없이 Debian과 Ubuntu에서 실행할 수 있습니다.
+
+```bash
+tar -xzf krx_<version>_linux_amd64.tar.gz
+install -m 755 krx ~/.local/bin/krx
+krx --help
+```
+
+### 소스에서 설치
+
 릴리즈 바이너리를 로컬 명령으로 설치하려면 아래 명령을 실행합니다.
 
 ```bash

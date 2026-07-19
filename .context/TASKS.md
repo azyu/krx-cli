@@ -25,6 +25,9 @@
 | [x] | Assess MDCSTAT024 investor net-buy source claim | Codex |
 | [x] | Rename public binary from `krw` to `krx` | Codex |
 
+| [x] | Review KIS foreign-institution ranking implementation feasibility | Codex |
+| [x] | Add Debian and Ubuntu Linux release support | Main |
+| [~] | Publish v0.1.0 release and Homebrew formula | Main |
 ## Status Legend
 
 - `[ ]` — Pending

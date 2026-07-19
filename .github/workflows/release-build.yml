@@ -1,0 +1,317 @@
+name: Release Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag (vMAJOR.MINOR.PATCH), e.g. v0.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify release inputs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+
+      - name: Validate release tag format
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.release_tag }}"
+
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: ${tag}"
+            echo "Expected format: vMAJOR.MINOR.PATCH (example: v0.1.0)"
+            exit 1
+          fi
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Validate crate version matches release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.release_tag }}"
+          crate_version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "krx-cli") | .version')"
+
+          if [[ "v${crate_version}" != "${tag}" ]]; then
+            echo "Release tag ${tag} does not match crate version v${crate_version}"
+            exit 1
+          fi
+
+      - name: Test
+        run: cargo test --locked
+
+  build:
+    name: Build ${{ matrix.artifact_suffix }}
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact_suffix: linux_amd64
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            artifact_suffix: linux_arm64
+          - os: macos-14
+            target: aarch64-apple-darwin
+            artifact_suffix: darwin_arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_suffix: windows_amd64
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            artifact_suffix: windows_arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install musl toolchain
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes musl-tools
+
+      - name: Build binary (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: cargo build --locked --bin krx --release --target "${{ matrix.target }}"
+
+      - name: Build binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: cargo build --locked --bin krx --release --target "${{ matrix.target }}"
+
+      - name: Verify static Linux binary
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary="target/${{ matrix.target }}/release/krx"
+          "${binary}" --help >/dev/null
+
+          if readelf -l "${binary}" | grep -q "Requesting program interpreter"; then
+            echo "Linux release binary is dynamically linked: ${binary}"
+            exit 1
+          fi
+
+      - name: Package archive (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ inputs.release_tag }}"
+          version="${version#v}"
+          archive_name="krx_${version}_${{ matrix.artifact_suffix }}"
+
+          mkdir staging
+          cp "target/${{ matrix.target }}/release/krx" staging/
+          cp README.md staging/
+          cp LICENSE staging/
+          tar -czf "${archive_name}.tar.gz" -C staging krx README.md LICENSE
+
+      - name: Package archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = "${{ inputs.release_tag }}".TrimStart("v")
+          $archiveName = "krx_${version}_${{ matrix.artifact_suffix }}"
+
+          New-Item -ItemType Directory -Force staging | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/krx.exe" staging/krx.exe
+          Copy-Item README.md staging/README.md
+          Copy-Item LICENSE staging/LICENSE
+
+          Push-Location staging
+          Compress-Archive -Path krx.exe, README.md, LICENSE -DestinationPath "../$archiveName.zip" -Force
+          Pop-Location
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: krx_${{ matrix.artifact_suffix }}
+          path: krx_*
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          for file in *.tar.gz *.zip; do
+            if [[ -f "${file}" ]]; then
+              sha256sum "${file}"
+            fi
+          done | sort -k2 > checksums.txt
+
+      - name: Create or update release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.release_tag }}"
+
+          if gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${tag}" dist/* --clobber --repo "${GITHUB_REPOSITORY}"
+          else
+            gh release create "${tag}" dist/* --title "${tag}" --generate-notes --repo "${GITHUB_REPOSITORY}"
+          fi
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check Homebrew tap configuration
+        id: tap
+        shell: bash
+        env:
+          HOMEBREW_TAP_REPOSITORY: ${{ vars.HOMEBREW_TAP_REPOSITORY }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${HOMEBREW_TAP_REPOSITORY}" || -z "${HOMEBREW_TAP_TOKEN}" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Homebrew tap configuration is missing; skipping formula update."
+            exit 0
+          fi
+
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        if: steps.tap.outputs.enabled == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Clone tap repository
+        if: steps.tap.outputs.enabled == 'true'
+        shell: bash
+        env:
+          HOMEBREW_TAP_REPOSITORY: ${{ vars.HOMEBREW_TAP_REPOSITORY }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPOSITORY}.git" tap
+
+      - name: Render formula
+        if: steps.tap.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.release_tag }}"
+          version="${tag#v}"
+          base_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}"
+          darwin_arm64_sha="$(sha256sum "dist/krx_${version}_darwin_arm64.tar.gz" | awk '{print $1}')"
+          linux_amd64_sha="$(sha256sum "dist/krx_${version}_linux_amd64.tar.gz" | awk '{print $1}')"
+          linux_arm64_sha="$(sha256sum "dist/krx_${version}_linux_arm64.tar.gz" | awk '{print $1}')"
+
+          mkdir -p tap/Formula
+          cat > tap/Formula/krx.rb <<EOF
+          class Krx < Formula
+            desc "Agent-friendly KRX Open API CLI"
+            homepage "https://github.com/${GITHUB_REPOSITORY}"
+            version "${version}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "${base_url}/krx_${version}_darwin_arm64.tar.gz"
+                sha256 "${darwin_arm64_sha}"
+              else
+                odie "krx Homebrew binaries are only published for macOS arm64."
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.intel?
+                url "${base_url}/krx_${version}_linux_amd64.tar.gz"
+                sha256 "${linux_amd64_sha}"
+              elsif Hardware::CPU.arm?
+                url "${base_url}/krx_${version}_linux_arm64.tar.gz"
+                sha256 "${linux_arm64_sha}"
+              else
+                odie "krx Homebrew binaries are only published for Linux amd64 and arm64."
+              end
+            end
+
+            def install
+              bin.install "krx"
+              prefix.install_metafiles
+            end
+
+            test do
+              assert_match "Agent-friendly KRX Open API CLI", shell_output("#{bin}/krx --help")
+            end
+          end
+          EOF
+
+      - name: Commit and push formula update
+        if: steps.tap.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.release_tag }}"
+
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/krx.rb
+
+          if git diff --cached --quiet; then
+            echo "No Homebrew formula changes detected."
+            exit 0
+          fi
+
+          git commit -m "chore: update krx formula for ${tag}"
+          git push

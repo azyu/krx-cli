@@ -96,8 +96,8 @@ pub struct CallArgs {
 
 #[cfg(test)]
 mod tests {
-    use clap::CommandFactory;
     use super::*;
+    use clap::CommandFactory;
 
     #[test]
     fn command_name_is_krx() {
