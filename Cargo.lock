@@ -503,6 +503,15 @@ name = "krx-cli"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "krx-core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "krx-core"
+version = "0.1.0"
+dependencies = [
  "reqwest",
  "serde",
  "serde_json",

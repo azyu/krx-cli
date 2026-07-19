@@ -7,7 +7,7 @@ install_root="${HOME}/.local"
 install_bin_dir="${install_root}/bin"
 
 cargo install \
-  --path "$repo_root" \
+  --path "$repo_root/crates/cli" \
   --root "$install_root" \
   --force \
   --bin krx

@@ -48,7 +48,7 @@ jobs:
           crate_version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "krx-cli") | .version')"
 
           if [[ "v${crate_version}" != "${tag}" ]]; then
-            echo "Release tag ${tag} does not match crate version v${crate_version}"
+            echo "Release tag ${tag} does not match krx-cli version v${crate_version}"
             exit 1
           fi
 
@@ -106,12 +106,12 @@ jobs:
       - name: Build binary (Unix)
         if: runner.os != 'Windows'
         shell: bash
-        run: cargo build --locked --bin krx --release --target "${{ matrix.target }}"
+        run: cargo build --locked -p krx-cli --bin krx --release --target "${{ matrix.target }}"
 
       - name: Build binary (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: cargo build --locked --bin krx --release --target "${{ matrix.target }}"
+        run: cargo build --locked -p krx-cli --bin krx --release --target "${{ matrix.target }}"
 
       - name: Verify static Linux binary
         if: runner.os == 'Linux'
@@ -256,8 +256,7 @@ jobs:
           linux_amd64_sha="$(sha256sum "dist/krx_${version}_linux_amd64.tar.gz" | awk '{print $1}')"
           linux_arm64_sha="$(sha256sum "dist/krx_${version}_linux_arm64.tar.gz" | awk '{print $1}')"
 
-          mkdir -p tap/Formula
-          cat > tap/Formula/krx.rb <<EOF
+          cat > tap/krx.rb <<EOF
           class Krx < Formula
             desc "Agent-friendly KRX Open API CLI"
             homepage "https://github.com/${GITHUB_REPOSITORY}"
@@ -306,7 +305,7 @@ jobs:
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Formula/krx.rb
+          git add krx.rb
 
           if git diff --cached --quiet; then
             echo "No Homebrew formula changes detected."

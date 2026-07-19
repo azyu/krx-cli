@@ -1,4 +1,4 @@
-use crate::error::Result;
+use krx_core::error::Result;
 
 pub fn print_json<T: serde::Serialize>(value: &T) -> Result<()> {
     println!("{}", serde_json::to_string_pretty(value)?);
